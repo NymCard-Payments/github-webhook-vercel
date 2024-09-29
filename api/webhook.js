@@ -1,4 +1,4 @@
-// api/github-commit.js
+//api/github-commit.js
 export default async function handler(req, res) {
     if (req.method === 'POST') {
       const commitData = req.body;
