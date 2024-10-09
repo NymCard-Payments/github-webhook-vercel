@@ -2,6 +2,9 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const commitData = req.body;
 
+    // Log the incoming commit data to check the structure
+    console.log("Commit Data:", JSON.stringify(commitData, null, 2));
+
     // Validate if this is a push event, if not, exit
     if (!commitData.ref || !commitData.commits) {
       return res.status(400).json({ error: 'Not a valid push event' });
@@ -10,14 +13,18 @@ export default async function handler(req, res) {
     // Extract the necessary commit information and filter out Devtools-related commits
     const commits = commitData.commits
       .filter(commit => commitData.repository.name !== 'Devtools') // Filter commits from Devtools repo
-      .map(commit => ({
-        message: commit.message,
-        username: commit.author.username || commit.author.name,
-        author: commit.author.name,
-        url: commit.url,
-        timestamp: commit.timestamp,
-        repository: commitData.repository.name, // Get the repository name
-      }));
+      .map(commit => {
+        // Fallback to author.name or author.email if username is not available
+        const username = commit.author.username || commit.author.name || commit.author.email || 'Unknown Author';
+        return {
+          message: commit.message,
+          username: username,
+          author: commit.author.name,
+          url: commit.url,
+          timestamp: commit.timestamp,
+          repository: commitData.repository.name, // Get the repository name
+        };
+      });
 
     // If no commits remain after filtering, skip sending to Monday.com
     if (commits.length === 0) {
