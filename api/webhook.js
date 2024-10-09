@@ -19,19 +19,14 @@ export default async function handler(req, res) {
         repository: commitData.repository.name, // Get the repository name
       }));
 
-    // Sort the commits by timestamp (newest first) and get the latest 10
-    const latestCommits = commits
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // Sort by timestamp
-      .slice(0, 10); // Get the latest 10 commits
-
     // If no commits remain after filtering, skip sending to Monday.com
-    if (latestCommits.length === 0) {
+    if (commits.length === 0) {
       return res.status(200).json({ message: 'No valid commits to process' });
     }
 
-    // Send the latest 10 commits to Monday.com
+    // Send the commits to Monday.com
     try {
-      const mondayResult = await sendCommitsToMonday(latestCommits); // Only send the latest 10
+      const mondayResult = await sendCommitsToMonday(commits);
       res.status(200).json({ success: true, data: mondayResult });
     } catch (error) {
       console.error('Error sending data to Monday.com:', error);
@@ -47,14 +42,13 @@ async function sendCommitsToMonday(commits) {
   const mondayApiUrl = 'https://api.monday.com/v2';
   const mondayApiKey = process.env.MONDAY_API_TOKEN;
   const boardId = process.env.MONDAY_BOARD_ID;
-  
+
   const results = [];
 
   // Loop through each commit and send it as an item to the Monday.com board
   for (const commit of commits) {
-
     // Format timestamp to only include date (e.g., 2023-10-03)
-    const formattedTimestamp = commit.timestamp.split('T')[0];  
+    const formattedTimestamp = commit.timestamp.split('T')[0];
 
     // GraphQL mutation query to create an item on the Monday.com board
     const query = `
@@ -79,6 +73,7 @@ async function sendCommitsToMonday(commits) {
       body: JSON.stringify({ query }),
     });
 
+    // Handle the API response and store the result
     const result = await response.json();
     results.push(result);
   }
