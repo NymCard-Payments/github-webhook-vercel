@@ -1,4 +1,3 @@
-// api/github-commit.js
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     const commitData = req.body;
@@ -8,19 +7,27 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Not a valid push event' });
     }
 
-    // Extract the necessary commit information
-    const commits = commitData.commits.map(commit => ({
-      message: commit.message,
-      author: commit.author.name,
-      url: commit.url,
-      timestamp: commit.timestamp,
-      repository: commitData.repository.name, // Get the repository name
-    }));
+    // Extract the necessary commit information and filter out Devtools-related commits
+    const commits = commitData.commits
+      .filter(commit => commitData.repository.name !== 'Devtools') // Filter commits from Devtools repo
+      .map(commit => ({
+        message: commit.message,
+        username: commit.author.username || commit.author.name,
+        author: commit.author.name,
+        url: commit.url,
+        timestamp: commit.timestamp,
+        repository: commitData.repository.name, // Get the repository name
+      }));
 
     // Sort the commits by timestamp (newest first) and get the latest 10
     const latestCommits = commits
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // Sort by timestamp
       .slice(0, 10); // Get the latest 10 commits
+
+    // If no commits remain after filtering, skip sending to Monday.com
+    if (latestCommits.length === 0) {
+      return res.status(200).json({ message: 'No valid commits to process' });
+    }
 
     // Send the latest 10 commits to Monday.com
     try {
@@ -46,20 +53,23 @@ async function sendCommitsToMonday(commits) {
   // Loop through each commit and send it as an item to the Monday.com board
   for (const commit of commits) {
 
+    // Format timestamp to only include date (e.g., 2023-10-03)
     const formattedTimestamp = commit.timestamp.split('T')[0];  
 
+    // GraphQL mutation query to create an item on the Monday.com board
     const query = `
       mutation {
         create_item (
           board_id: ${boardId},
           item_name: "${commit.message}",
-          column_values: "{\\"text4__1\\": \\"${commit.author}\\", \\"text__1\\": \\"${commit.url}\\", \\"date__1\\": \\"${formattedTimestamp}\\", \\"text8__1\\": \\"${commit.repository}\\"}"
+          column_values: "{\\"text4__1\\": \\"${commit.author}\\", \\"text6__1\\": \\"${commit.username}\\", \\"text__1\\": \\"${commit.url}\\", \\"date__1\\": \\"${formattedTimestamp}\\", \\"text8__1\\": \\"${commit.repository}\\"}"
         ) {
           id
         }
       }
     `;
 
+    // Send the request to the Monday.com API
     const response = await fetch(mondayApiUrl, {
       method: 'POST',
       headers: {
