@@ -61,7 +61,7 @@ async function sendCommitsToMonday(commits) {
       }
       `;
 
-    // Send the request to the Monday.com API
+    // Send the request to the Monday.com API 
     const response = await fetch(mondayApiUrl, {
       method: 'POST',
       headers: {
@@ -77,3 +77,5 @@ async function sendCommitsToMonday(commits) {
 
   return results;
 }
+
+//test
