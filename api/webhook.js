@@ -68,7 +68,7 @@ async function calculateLOC(commitHash, repoOwner, repoName) {
 
     const data = await response.json();
 
-    // Parse the diff data
+    // Parse the diff dataa
     let additions = 0;
     let deletions = 0;
 
