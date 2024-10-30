@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const commitData = req.body;
 
-    // Validate if this is a push event, if not, exitt
+    // Validate if this is a push event, if not, exit
     if (!commitData.ref || !commitData.commits) {
       return res.status(400).json({ error: 'Not a valid push event' });
     }
@@ -68,7 +68,7 @@ async function calculateLOC(commitHash, repoOwner, repoName) {
 
     const data = await response.json();
 
-    // Parse the diff dataa
+    // Parse the diff data
     let additions = 0;
     let deletions = 0;
 
@@ -103,7 +103,7 @@ async function sendCommitsToMonday(commits) {
         create_item (
           board_id: ${boardId},
           item_name: "${commit.message}",
-          column_values: "{\\"text4__1\\": \\"${commit.author}\\", \\"text6__1\\": \\"${commit.username}\\", \\"text__1\\": \\"${commit.url}\\", \\"date__1\\": \\"${formattedTimestamp}\\", \\"text8__1\\": \\"${commit.repository}\\", \\"numbers__1\\": \\"${commit.loc}\\"}"
+          column_values: "{\\"text4__1\\": \\"${commit.author}\\", \\"text1__1\\": \\"${commit.username}\\", \\"text__1\\": \\"${commit.url}\\", \\"date__1\\": \\"${formattedTimestamp}\\", \\"text8__1\\": \\"${commit.repository}\\", \\"text106__1\\": \\"${commit.loc}\\"}"
         ) {
           id
         }
@@ -122,6 +122,9 @@ async function sendCommitsToMonday(commits) {
 
     // Handle the API response and store the result
     const result = await response.json();
+    if (result.errors) {
+      console.error('Monday.com API error:', result.errors);
+    }
     results.push(result);
   }
 
